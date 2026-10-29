@@ -18,6 +18,13 @@ public class SequenciaVisitaUI : MonoBehaviour
     [SerializeField] private TMP_Text textoVoltar;
     [SerializeField] private Animator animatorPersonagem;
 
+    [Header("História do local")]
+    [SerializeField] private NpcHistoriaUI npcHistoria;
+
+    [Tooltip("Texto exibido durante a visita.")]
+    [SerializeField] private string mensagemVoltar =
+        "Pressione Q para voltar";
+
     [Header("Animação")]
     [Tooltip("Nome do estado criado no Animator do PersonagemAnimado.")]
     [SerializeField] private string estadoAnimacaoPersonagem =
@@ -42,10 +49,25 @@ public class SequenciaVisitaUI : MonoBehaviour
         PrepararEstadoInicial();
     }
 
+    private void OnEnable()
+    {
+        if (npcHistoria != null)
+            npcHistoria.AoConcluir += HabilitarVoltar;
+    }
+
+    private void OnDisable()
+    {
+        if (npcHistoria != null)
+            npcHistoria.AoConcluir -= HabilitarVoltar;
+    }
+
     private void Update()
     {
         if (aguardandoVoltar && Input.GetKeyDown(teclaVoltar))
+        {
             StartCoroutine(FinalizarSequencia());
+            return;
+        }
     }
 
     public bool Iniciar(ObjetoInteragivelUI local)
@@ -71,6 +93,9 @@ public class SequenciaVisitaUI : MonoBehaviour
         DefinirImagem(personagemAnimado, false);
         DefinirTexto(textoVoltar, false);
 
+        if (npcHistoria != null)
+            npcHistoria.Ocultar();
+
         yield return AlterarAlpha(
             fundoPreto,
             0f,
@@ -92,8 +117,8 @@ public class SequenciaVisitaUI : MonoBehaviour
             DefinirImagem(imagemLocal, local.ImagemLocal != null);
         }
 
-        DefinirTexto(textoVoltar, true);
-        aguardandoVoltar = true;
+        if (npcHistoria == null || !npcHistoria.Iniciar(local.Historia))
+            HabilitarVoltar();
     }
 
     private IEnumerator FinalizarSequencia()
@@ -125,17 +150,39 @@ public class SequenciaVisitaUI : MonoBehaviour
         if (animatorPersonagem == null)
             return;
 
-        animatorPersonagem.Rebind();
-        animatorPersonagem.Update(0f);
+        ReiniciarAnimator(
+            animatorPersonagem,
+            estadoAnimacaoPersonagem
+        );
+    }
 
-        if (!string.IsNullOrWhiteSpace(estadoAnimacaoPersonagem))
-        {
-            animatorPersonagem.Play(
-                estadoAnimacaoPersonagem,
-                0,
-                0f
-            );
-        }
+    private void HabilitarVoltar()
+    {
+        if (!EmExecucao)
+            return;
+
+        if (textoVoltar != null)
+            textoVoltar.text = mensagemVoltar;
+
+        DefinirTexto(textoVoltar, true);
+        aguardandoVoltar = true;
+    }
+
+    private static void ReiniciarAnimator(
+        Animator animator,
+        string nomeEstado
+    )
+    {
+        if (animator == null)
+            return;
+
+        animator.gameObject.SetActive(true);
+        animator.enabled = true;
+        animator.Rebind();
+        animator.Update(0f);
+
+        if (!string.IsNullOrWhiteSpace(nomeEstado))
+            animator.Play(nomeEstado, 0, 0f);
     }
 
     private void PrepararEstadoInicial()
@@ -146,6 +193,9 @@ public class SequenciaVisitaUI : MonoBehaviour
         DefinirImagem(imagemLocal, false);
         DefinirImagem(personagemAnimado, false);
         DefinirTexto(textoVoltar, false);
+
+        if (npcHistoria != null)
+            npcHistoria.Ocultar();
     }
 
     private static IEnumerator AlterarAlpha(
@@ -197,13 +247,35 @@ public class SequenciaVisitaUI : MonoBehaviour
 
     private static void DefinirImagem(Image imagem, bool visivel)
     {
-        if (imagem != null)
-            imagem.enabled = visivel;
+        if (imagem == null)
+            return;
+
+        if (visivel)
+            imagem.gameObject.SetActive(true);
+
+        imagem.enabled = visivel;
+
+        if (!visivel)
+            imagem.gameObject.SetActive(false);
     }
 
     private static void DefinirTexto(TMP_Text texto, bool visivel)
     {
-        if (texto != null)
-            texto.enabled = visivel;
+        if (texto == null)
+            return;
+
+        if (visivel)
+        {
+            texto.gameObject.SetActive(true);
+
+            Color cor = texto.color;
+            cor.a = 1f;
+            texto.color = cor;
+        }
+
+        texto.enabled = visivel;
+
+        if (!visivel)
+            texto.gameObject.SetActive(false);
     }
 }

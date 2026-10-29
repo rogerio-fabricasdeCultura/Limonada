@@ -12,6 +12,11 @@ public class ObjetoInteragivelUI : MonoBehaviour
     [Tooltip("Se estiver vazio, será usado o sprite do SpriteRenderer deste objeto.")]
     [SerializeField] private Sprite imagemLocal;
 
+    [Header("História do local")]
+    [Tooltip("Cada item representa uma fala. A barra de espaço avança para o próximo item.")]
+    [TextArea(2, 6)]
+    [SerializeField] private string[] historia;
+
     public string NomeLocal => string.IsNullOrWhiteSpace(nomeLocal)
         ? gameObject.name
         : nomeLocal;
@@ -21,6 +26,7 @@ public class ObjetoInteragivelUI : MonoBehaviour
         : textoInteracao;
 
     public Sprite ImagemLocal => imagemLocal;
+    public string[] Historia => historia;
 
     private void Awake()
     {

@@ -53,6 +53,16 @@ public class PlayerInteracaoUI : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D outro)
     {
+        RegistrarObjeto(outro);
+    }
+
+    private void OnTriggerStay2D(Collider2D outro)
+    {
+        RegistrarObjeto(outro);
+    }
+
+    private void RegistrarObjeto(Collider2D outro)
+    {
         ObjetoInteragivelUI objeto =
             outro.GetComponentInParent<ObjetoInteragivelUI>();
 
@@ -133,6 +143,21 @@ public class PlayerInteracaoUI : MonoBehaviour
     {
         if (promptInteracao == null)
             return;
+
+        if (visivel)
+        {
+            promptInteracao.gameObject.SetActive(true);
+
+            if (textoPrompt != null)
+            {
+                textoPrompt.gameObject.SetActive(true);
+                textoPrompt.enabled = true;
+
+                Color cor = textoPrompt.color;
+                cor.a = 1f;
+                textoPrompt.color = cor;
+            }
+        }
 
         promptInteracao.alpha = visivel ? 1f : 0f;
         promptInteracao.interactable = false;
