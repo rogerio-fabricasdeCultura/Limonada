@@ -8,7 +8,7 @@ public class SequenciaVisitaUI : MonoBehaviour
 {
     [Header("Controles")]
     [SerializeField] private PlayerMovement movimentoJogador;
-    [SerializeField] private KeyCode teclaVoltar = KeyCode.Q;
+    [SerializeField] private KeyCode teclaFecharFoto = KeyCode.Space;
 
     [Header("Elementos da sequência")]
     [SerializeField] private CanvasGroup raizSequencia;
@@ -22,8 +22,8 @@ public class SequenciaVisitaUI : MonoBehaviour
     [SerializeField] private NpcHistoriaUI npcHistoria;
 
     [Tooltip("Texto exibido durante a visita.")]
-    [SerializeField] private string mensagemVoltar =
-        "Pressione Q para voltar";
+    [SerializeField] private string mensagemFecharFoto =
+        "Pressione ESPAÇO para fechar a foto";
 
     [Header("Animação")]
     [Tooltip("Nome do estado criado no Animator do PersonagemAnimado.")]
@@ -42,7 +42,8 @@ public class SequenciaVisitaUI : MonoBehaviour
     public bool EmExecucao { get; private set; }
     public event Action AoFinalizar;
 
-    private bool aguardandoVoltar;
+    private bool aguardandoFecharFoto;
+    private int frameHabilitouFecharFoto = -1;
 
     private void Awake()
     {
@@ -52,18 +53,22 @@ public class SequenciaVisitaUI : MonoBehaviour
     private void OnEnable()
     {
         if (npcHistoria != null)
-            npcHistoria.AoConcluir += HabilitarVoltar;
+            npcHistoria.AoConcluir += HabilitarFecharFoto;
     }
 
     private void OnDisable()
     {
         if (npcHistoria != null)
-            npcHistoria.AoConcluir -= HabilitarVoltar;
+            npcHistoria.AoConcluir -= HabilitarFecharFoto;
     }
 
     private void Update()
     {
-        if (aguardandoVoltar && Input.GetKeyDown(teclaVoltar))
+        if (
+            aguardandoFecharFoto
+            && Time.frameCount > frameHabilitouFecharFoto
+            && Input.GetKeyDown(teclaFecharFoto)
+        )
         {
             StartCoroutine(FinalizarSequencia());
             return;
@@ -82,7 +87,7 @@ public class SequenciaVisitaUI : MonoBehaviour
     private IEnumerator ExecutarSequencia(ObjetoInteragivelUI local)
     {
         EmExecucao = true;
-        aguardandoVoltar = false;
+        aguardandoFecharFoto = false;
 
         if (movimentoJogador != null)
             movimentoJogador.DefinirMovimento(false);
@@ -118,12 +123,12 @@ public class SequenciaVisitaUI : MonoBehaviour
         }
 
         if (npcHistoria == null || !npcHistoria.Iniciar(local.Historia))
-            HabilitarVoltar();
+            HabilitarFecharFoto();
     }
 
     private IEnumerator FinalizarSequencia()
     {
-        aguardandoVoltar = false;
+        aguardandoFecharFoto = false;
 
         float alphaInicial = raizSequencia != null
             ? raizSequencia.alpha
@@ -156,16 +161,17 @@ public class SequenciaVisitaUI : MonoBehaviour
         );
     }
 
-    private void HabilitarVoltar()
+    private void HabilitarFecharFoto()
     {
         if (!EmExecucao)
             return;
 
         if (textoVoltar != null)
-            textoVoltar.text = mensagemVoltar;
+            textoVoltar.text = mensagemFecharFoto;
 
         DefinirTexto(textoVoltar, true);
-        aguardandoVoltar = true;
+        aguardandoFecharFoto = true;
+        frameHabilitouFecharFoto = Time.frameCount;
     }
 
     private static void ReiniciarAnimator(
@@ -187,7 +193,8 @@ public class SequenciaVisitaUI : MonoBehaviour
 
     private void PrepararEstadoInicial()
     {
-        aguardandoVoltar = false;
+        aguardandoFecharFoto = false;
+        frameHabilitouFecharFoto = -1;
         DefinirCanvasGroup(raizSequencia, 0f, false);
         DefinirCanvasGroup(fundoPreto, 0f, false);
         DefinirImagem(imagemLocal, false);

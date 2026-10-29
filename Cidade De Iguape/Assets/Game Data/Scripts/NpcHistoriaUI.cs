@@ -22,6 +22,9 @@ public class NpcHistoriaUI : MonoBehaviour
     [SerializeField] private string mensagemContinuar =
         "Pressione ESPAÇO para continuar";
 
+    [SerializeField] private string mensagemFinalizar =
+        "Pressione ESPAÇO para fechar a história";
+
     public bool EmExecucao { get; private set; }
     public event Action AoConcluir;
 
@@ -97,12 +100,13 @@ public class NpcHistoriaUI : MonoBehaviour
         bool possuiProxima = PossuiFalaDepoisDe(indiceAtual);
 
         if (textoContinuar != null)
-            textoContinuar.text = mensagemContinuar;
+        {
+            textoContinuar.text = possuiProxima
+                ? mensagemContinuar
+                : mensagemFinalizar;
+        }
 
-        DefinirTextoVisivel(textoContinuar, possuiProxima);
-
-        if (!possuiProxima)
-            Concluir();
+        DefinirTextoVisivel(textoContinuar, true);
     }
 
     private void Concluir()
@@ -111,6 +115,9 @@ public class NpcHistoriaUI : MonoBehaviour
             return;
 
         EmExecucao = false;
+        DefinirGrupoVisivel(false);
+        DefinirImagemVisivel(false);
+        DefinirTextoVisivel(textoHistoria, false);
         DefinirTextoVisivel(textoContinuar, false);
         AoConcluir?.Invoke();
     }
