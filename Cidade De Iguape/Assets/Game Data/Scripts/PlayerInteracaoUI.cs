@@ -14,12 +14,25 @@ public class PlayerInteracaoUI : MonoBehaviour
     [Header("Sequência do local")]
     [SerializeField] private SequenciaVisitaUI sequenciaVisita;
 
+    [Header("Áudio")]
+    [SerializeField] private AudioSource audioSource;
+
     private readonly List<ObjetoInteragivelUI> objetosAoAlcance =
         new List<ObjetoInteragivelUI>();
     private ObjetoInteragivelUI objetoEmDestaque;
 
     private void Awake()
     {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0f;
+        }
+
         DefinirPromptVisivel(false);
     }
 
@@ -99,7 +112,10 @@ public class PlayerInteracaoUI : MonoBehaviour
         }
 
         if (sequenciaVisita.Iniciar(objetoEmDestaque))
+        {
+            objetoEmDestaque.TocarAudio(audioSource);
             DefinirPromptVisivel(false);
+        }
     }
 
     private void AtualizarObjetoEmDestaque()

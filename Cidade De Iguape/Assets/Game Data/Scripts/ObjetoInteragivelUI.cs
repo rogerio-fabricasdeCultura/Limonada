@@ -12,6 +12,12 @@ public class ObjetoInteragivelUI : MonoBehaviour
     [Tooltip("Se estiver vazio, será usado o sprite do SpriteRenderer deste objeto.")]
     [SerializeField] private Sprite imagemLocal;
 
+    [Header("Áudio")]
+    [SerializeField] private AudioClip audioInteracao;
+
+    [Range(0f, 1f)]
+    [SerializeField] private float volumeAudio = 1f;
+
     [Header("História do local")]
     [Tooltip("Cada item representa uma fala. A barra de espaço avança para o próximo item.")]
     [TextArea(2, 6)]
@@ -27,6 +33,14 @@ public class ObjetoInteragivelUI : MonoBehaviour
 
     public Sprite ImagemLocal => imagemLocal;
     public string[] Historia => historia;
+
+    public void TocarAudio(AudioSource fonteAudio)
+    {
+        if (fonteAudio == null || audioInteracao == null)
+            return;
+
+        fonteAudio.PlayOneShot(audioInteracao, volumeAudio);
+    }
 
     private void Awake()
     {
