@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 public class PlayerInteracaoUI : MonoBehaviour
@@ -6,23 +7,74 @@ public class PlayerInteracaoUI : MonoBehaviour
     [Header("Interação")]
     [SerializeField] private KeyCode teclaInteracao = KeyCode.E;
 
-    [Header("Interface")]
-    [SerializeField] private PainelUI painel;
+    [Header("Mensagem de interação")]
+    [SerializeField] private CanvasGroup promptInteracao;
+    [SerializeField] private TMP_Text textoPrompt;
+
+    [Header("Sequência do local")]
+    [SerializeField] private SequenciaVisitaUI sequenciaVisita;
+
+    [Header("Áudio")]
+    [SerializeField] private AudioSource audioSource;
 
     private readonly List<ObjetoInteragivelUI> objetosAoAlcance =
         new List<ObjetoInteragivelUI>();
     private ObjetoInteragivelUI objetoEmDestaque;
-    private ObjetoInteragivelUI objetoExibido;
+
+    private void Awake()
+    {
+        if (audioSource == null)
+            audioSource = GetComponent<AudioSource>();
+
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+            audioSource.spatialBlend = 0f;
+        }
+
+        DefinirPromptVisivel(false);
+    }
+
+    private void OnEnable()
+    {
+        if (sequenciaVisita != null)
+            sequenciaVisita.AoFinalizar += AtualizarPrompt;
+    }
+
+    private void OnDisable()
+    {
+        if (sequenciaVisita != null)
+            sequenciaVisita.AoFinalizar -= AtualizarPrompt;
+
+        DefinirPromptVisivel(false);
+    }
 
     private void Update()
     {
         AtualizarObjetoEmDestaque();
 
+        if (sequenciaVisita != null && sequenciaVisita.EmExecucao)
+        {
+            DefinirPromptVisivel(false);
+            return;
+        }
+
         if (objetoEmDestaque != null && Input.GetKeyDown(teclaInteracao))
-            AlternarPainel();
+            IniciarInteracao();
     }
 
     private void OnTriggerEnter2D(Collider2D outro)
+    {
+        RegistrarObjeto(outro);
+    }
+
+    private void OnTriggerStay2D(Collider2D outro)
+    {
+        RegistrarObjeto(outro);
+    }
+
+    private void RegistrarObjeto(Collider2D outro)
     {
         ObjetoInteragivelUI objeto =
             outro.GetComponentInParent<ObjetoInteragivelUI>();
@@ -44,40 +96,26 @@ public class PlayerInteracaoUI : MonoBehaviour
 
         objetosAoAlcance.Remove(objeto);
 
-        if (objetoExibido == objeto)
-            FecharPainel();
-
         AtualizarObjetoEmDestaque();
     }
 
-    private void AlternarPainel()
+    private void IniciarInteracao()
     {
-        if (painel == null)
+        if (sequenciaVisita == null)
         {
             Debug.LogWarning(
-                "O PainelUI não foi atribuído ao PlayerInteracaoUI.",
+                "A SequenciaVisitaUI não foi atribuída ao PlayerInteracaoUI.",
                 this
             );
 
             return;
         }
 
-        if (painel.EstaVisivel && objetoExibido == objetoEmDestaque)
+        if (sequenciaVisita.Iniciar(objetoEmDestaque))
         {
-            FecharPainel();
-            return;
+            objetoEmDestaque.TocarAudio(audioSource);
+            DefinirPromptVisivel(false);
         }
-
-        objetoEmDestaque.ExibirNoPainel(painel);
-        objetoExibido = objetoEmDestaque;
-    }
-
-    private void FecharPainel()
-    {
-        if (painel != null)
-            painel.Ocultar();
-
-        objetoExibido = null;
     }
 
     private void AtualizarObjetoEmDestaque()
@@ -99,6 +137,46 @@ public class PlayerInteracaoUI : MonoBehaviour
             }
         }
 
+        if (objetoEmDestaque == maisProximo)
+            return;
+
         objetoEmDestaque = maisProximo;
+        AtualizarPrompt();
+    }
+
+    private void AtualizarPrompt()
+    {
+        bool podeExibir = objetoEmDestaque != null
+            && (sequenciaVisita == null || !sequenciaVisita.EmExecucao);
+
+        if (podeExibir && textoPrompt != null)
+            textoPrompt.text = objetoEmDestaque.TextoInteracao;
+
+        DefinirPromptVisivel(podeExibir);
+    }
+
+    private void DefinirPromptVisivel(bool visivel)
+    {
+        if (promptInteracao == null)
+            return;
+
+        if (visivel)
+        {
+            promptInteracao.gameObject.SetActive(true);
+
+            if (textoPrompt != null)
+            {
+                textoPrompt.gameObject.SetActive(true);
+                textoPrompt.enabled = true;
+
+                Color cor = textoPrompt.color;
+                cor.a = 1f;
+                textoPrompt.color = cor;
+            }
+        }
+
+        promptInteracao.alpha = visivel ? 1f : 0f;
+        promptInteracao.interactable = false;
+        promptInteracao.blocksRaycasts = false;
     }
 }
